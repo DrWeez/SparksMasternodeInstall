@@ -109,8 +109,8 @@ function intro(){
   echo -e "${GREEN}Important configuration infomation and commands can be found ${NC}"
   echo -e "${GREEN}in $CONFIGFOLDER/$COIN_NAME.info ${NC}"
   echo
-  echo -e "${GREEN}When the ${RED}$COIN_NAME${NC} masternode is synced you will be prompted to  ${NC}"
-  echo -e "${GREEN}start the master node in the windows wallet. ${NC}"
+  echo -e "${NC}When the ${RED}$COIN_NAME${NC} masternode is synced you will be prompted to  ${NC}"
+  echo -e "${NC}start the master node in the windows wallet. ${NC}"
   echo
   echo -e "${RED}The script will clear your crontab, please backup custom infomation before you continue ${NC}"
   echo -e "${RED}Press CTR+C to exit now if you need to backup info in your crontab ${NC}"
@@ -563,13 +563,21 @@ function spk_versioncheck() {
 spk_version=$($COIN_CLI getinfo | grep -w version)
 spk_version=${spk_version#*:}
 spk_version=${spk_version%,*}
-
+echo $spk_version
+echo $COIN_VERSION
     if [[ $spk_version -lt $COIN_VERSION ]] ; then
       #wouyld you like to upgrade or complete a fresh install
+      echo -e ""
       echo -e "${RED}$COIN_NAME version $spk_version is already installed.${NC}"
+      echo -e ""
       echo -e "Would you like to upgrade[Y] $COIN_NAME or complete a fresh install [n] [Y/n] : "
-      echo -e "an upgrade [Y] will keep the current blockchan folder and sentinel installation for $COIN_NAME "
-      echo -e "a complete a fresh install [n] will completely remove the old installation folder and re sysnc the blockchain from scratch!"
+      echo -e ""
+      echo -e "An upgrade will keep the current blockchan and sentinel and configuiration "
+      echo -e ""
+      echo -e "a fresh install [n] will completely remove the old installation folder and configuration"
+      echo -e "a fresh install will remove all $COIN_NAME files, Make sure you have backed up your data "
+      echo -e ""
+      echo -e "Upgrade[Y] $COIN_NAME or Fresh install [n] [Y/n] : "
       read -e FRESHUPGRADE
     else
       echo -e "${RED}The latest version of $COIN_NAME ($spk_version) is already installed.${NC}"
@@ -580,7 +588,13 @@ spk_version=${spk_version%,*}
       UPGRADESPARKS='true'
     fi
     if [[ ("$FRESHUPGRADE" == "n" || "$FRESHUPGRADE" == "N") ]]; then
+        echo -e "${RED}Are you sure that you have backed up your data? [Y/n] "
+        read -e AREYOUSURE
+        if [[("$AREYOUSURE"== "y" || "$AREYOUSURE" == "Y")]]
       CLEANSPARKS='true'
+    else
+      echo -e "${RED}you must be sure to continue with a fresh install "
+      exit 1
     fi
     if [[ ("$FRESHUPGRADE" == "e" || "$FRESHUPGRADE" == "E") ]]; then
       echo -e "${RED}$0 Script aborted.${NC}"
