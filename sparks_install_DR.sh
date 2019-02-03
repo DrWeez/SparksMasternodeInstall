@@ -201,7 +201,7 @@ function download_node() {
 }
 
 function configure_systemd() {
-  echo -e "${GREEN}Configuring $COIN_NAME$ system service${NC}"
+  echo -e "${GREEN}Configuring $COIN_NAME system service${NC}"
 ###New
 cd ~/
 touch $CONFIGFOLDER/$COIN_NAME.service
@@ -565,56 +565,61 @@ fi
 
 function spk_versioncheck() {
   clear
-spk_version=$($COIN_CLI getinfo | grep -w version)
-spk_version=${spk_version#*:}
-spk_version=${spk_version%,*}
+  if [ -e $CONFIGFOLDER/$CONFIG_FILE ] ;  then
+    spk_version=$($COIN_CLI getinfo | grep -w version)
+    spk_version=${spk_version#*:}
+    spk_version=${spk_version%,*}
 
-    if [[ $spk_version -lt $COIN_VERSION ]] ; then
-      #wouyld you like to upgrade or complete a fresh install
-      echo -e ""
-      echo -e "${RED}$COIN_NAME version $spk_version is already installed.${NC}"
-      echo -e ""
-      echo -e "Would you like to upgrade[U] $COIN_NAME or preform a fresh install[f] [Y/n] : "
-      echo -e ""
-      echo -e "An upgrade will keep the current blockchan, sentinel and $COIN_NAME configuiration "
-      echo -e "Ubuntu and only the $COIN_NAME deamon and CLI will be upgraded"
-      echo -e ""
-      echo -e "A fresh install [f] will completely remove the old installation folder and configuration"
-      echo -e "as well as remove all $COIN_NAME files, Make sure you have backed up your data "
-      echo -e "The masternodeprivatekey will be saved and used in the new installation"
-      echo -e ""
-      echo -e "Upgrade[U] $COIN_NAME or Fresh install [f] [U/f] : "
-      read -e FRESHUPGRADE
-    else
-      echo -e "${RED}The latest version of $COIN_NAME ($spk_version) is already installed.${NC}"
-      echo -e "Press [f] to complete a fresh install or [e] to exit [e/n] : "
-      read -e FRESHUPGRADE
-    fi
-    if [[ ("$FRESHUPGRADE" == "u" || "$FRESHUPGRADE" == "U" || "$FRESHUPGRADE" == "") ]]; then
-      COINKEY=$(cat $CONFIGFOLDER/$CONFIG_FILE | grep masternodeprivkey)
-      COINKEY=${COINKEY#*=}
-      UPGRADESPARKS="true"
-#      #check if the sparks.service file is there
-      #if not suggest a fresh install
-    fi
-    if [[ ("$FRESHUPGRADE" == "f" || "$FRESHUPGRADE" == "F") ]]; then
-      echo -e "${RED}Are you sure that you have backed up your data? [Y/n] "
-      read -e AREYOUSURE
-        if [[ ("$AREYOUSURE" == "y" || "$AREYOUSURE" == "Y") ]]; then
-          CLEANSPARKS='true'
+        if [[ $spk_version -lt $COIN_VERSION ]] ; then
+          #wouyld you like to upgrade or complete a fresh install
+          echo -e ""
+          echo -e "${RED}$COIN_NAME version $spk_version is already installed.${NC}"
+          echo -e ""
+          echo -e "Would you like to upgrade[U] $COIN_NAME or preform a fresh install[f] [Y/n] : "
+          echo -e ""
+          echo -e "An upgrade will keep the current blockchan, sentinel and $COIN_NAME configuiration "
+          echo -e "Ubuntu and only the $COIN_NAME deamon and CLI will be upgraded"
+          echo -e ""
+          echo -e "A fresh install [f] will completely remove the old installation folder and configuration"
+          echo -e "as well as remove all $COIN_NAME files, Make sure you have backed up your data "
+          echo -e "The masternodeprivatekey will be saved and used in the new installation"
+          echo -e ""
+          echo -e "Upgrade[U] $COIN_NAME or Fresh install [f] [U/f] : "
+          read -e FRESHUPGRADE
+        else
+          echo -e "${RED}The latest version of $COIN_NAME ($spk_version) is already installed.${NC}"
+          echo -e "Press [f] to complete a fresh install or [e] to exit [e/n] : "
+          read -e FRESHUPGRADE
+        fi
+        if [[ ("$FRESHUPGRADE" == "u" || "$FRESHUPGRADE" == "U" || "$FRESHUPGRADE" == "") ]]; then
           COINKEY=$(cat $CONFIGFOLDER/$CONFIG_FILE | grep masternodeprivkey)
           COINKEY=${COINKEY#*=}
-          #could read and reuse the masternodeprivkey before removing it
-          #could back up the wallet
-        else
-          echo -e "${RED}you must be sure to continue with a fresh install "
+          UPGRADESPARKS="true"
+    #      #check if the sparks.service file is there
+          #if not suggest a fresh install
+        fi
+        if [[ ("$FRESHUPGRADE" == "f" || "$FRESHUPGRADE" == "F") ]]; then
+          echo -e "${RED}Are you sure that you have backed up your data? [Y/n] "
+          read -e AREYOUSURE
+            if [[ ("$AREYOUSURE" == "y" || "$AREYOUSURE" == "Y") ]]; then
+              CLEANSPARKS='true'
+              COINKEY=$(cat $CONFIGFOLDER/$CONFIG_FILE | grep masternodeprivkey)
+              COINKEY=${COINKEY#*=}
+              #could read and reuse the masternodeprivkey before removing it
+              #could back up the wallet
+            else
+              echo -e "${RED}you must be sure to continue with a fresh install "
+              exit 1
+            fi
+        fi
+        if [[ ("$FRESHUPGRADE" == "e" || "$FRESHUPGRADE" == "E") ]]; then
+          echo -e "${RED}$0 Script aborted.${NC}"
           exit 1
         fi
-    fi
-    if [[ ("$FRESHUPGRADE" == "e" || "$FRESHUPGRADE" == "E") ]]; then
-      echo -e "${RED}$0 Script aborted.${NC}"
-      exit 1
-    fi
+  else
+      #no else do full install
+  fi
+
 
 }
 
@@ -847,12 +852,13 @@ fi
 #do all checks
 #change in protocolversion requires that the node is started in hot wallet
 
-sync_node_blocks
-sync_node_mnsync
+
 get_mn_count
 sync_node_start
 sentinel_check
 information
+sync_node_blocks
+sync_node_mnsync
 clear
 printf '%b\n' "$(cat $HOMEPATH/$COIN_NAME.info)"
 rebootVPS
