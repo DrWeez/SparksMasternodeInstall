@@ -574,28 +574,28 @@ spk_version=${spk_version%,*}
       echo -e ""
       echo -e "${RED}$COIN_NAME version $spk_version is already installed.${NC}"
       echo -e ""
-      echo -e "Would you like to upgrade[Y] $COIN_NAME or preform a fresh install[n] [Y/n] : "
+      echo -e "Would you like to upgrade[U] $COIN_NAME or preform a fresh install[f] [Y/n] : "
       echo -e ""
       echo -e "An upgrade will keep the current blockchan, sentinel and configuiration "
       echo -e ""
-      echo -e "a fresh install [n] will completely remove the old installation folder and configuration"
+      echo -e "a fresh install [f] will completely remove the old installation folder and configuration"
       echo -e "as well as remove all $COIN_NAME files, Make sure you have backed up your data "
       echo -e ""
-      echo -e "Upgrade[Y] $COIN_NAME or Fresh install [n] [Y/n] : "
+      echo -e "Upgrade[U] $COIN_NAME or Fresh install [f] [U/f] : "
       read -e FRESHUPGRADE
     else
       echo -e "${RED}The latest version of $COIN_NAME ($spk_version) is already installed.${NC}"
-      echo -e "Press [n] to complete a fresh install or [e] to exit [e/n] : "
+      echo -e "Press [f] to complete a fresh install or [e] to exit [e/n] : "
       read -e FRESHUPGRADE
     fi
-    if [[ ("$FRESHUPGRADE" == "y" || "$FRESHUPGRADE" == "Y" || "$FRESHUPGRADE" == "") ]]; then
+    if [[ ("$FRESHUPGRADE" == "u" || "$FRESHUPGRADE" == "U" || "$FRESHUPGRADE" == "") ]]; then
 #check if the sparks.service file is there
 #if not suggest a fresh install
 
 
       UPGRADESPARKS="true"
     fi
-    if [[ ("$FRESHUPGRADE" == "n" || "$FRESHUPGRADE" == "N") ]]; then
+    if [[ ("$FRESHUPGRADE" == "f" || "$FRESHUPGRADE" == "F") ]]; then
       echo -e "${RED}Are you sure that you have backed up your data? [Y/n] "
       read -e AREYOUSURE
         if [[ ("$AREYOUSURE" == "y" || "$AREYOUSURE" == "Y") ]]; then
