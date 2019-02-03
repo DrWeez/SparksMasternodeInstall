@@ -146,7 +146,8 @@ purgeOldInstallation() {
       sudo rm ~/$CONFIGFOLDER/$COIN_NAME.service > /dev/null 2>&1
       #delete whole sparks folder
       sudo rm -rf ~/$CONFIGFOLDER > /dev/null 2>&1
-
+echo "do purge check"
+pause
     fi
 
 }
@@ -754,10 +755,10 @@ function rebootVPS() {
 function setup_node() {
   get_ip
   create_config
-  #if [[ ("$CLEANSPARKS" == "y" || "$CLEANSPARKS" == "Y" || "$CLEANSPARKS" == "") ]]; then
+  if ["$CLEANSPARKS" = "false" ]; then
 #else
   create_key
-#fi
+fi
   update_config
   enable_firewall
   grab_bootstrap
@@ -826,8 +827,8 @@ if [ $CLEANSPARKS = "true" ] ; then
 fi
 
 if [ $UPGRADESPARKS = "false" ] ; then
-#do if upgrade false
-
+#do if upgrade  and clean false
+if [ $CLEANSPARKS = "false" ] ; then
   clear
   enter_key
   enter_SSH_RSA_key
@@ -836,10 +837,11 @@ if [ $UPGRADESPARKS = "false" ] ; then
   download_node
   setup_node
 fi
+fi
 
+#do all checks
+#change in protocolversion requires that the node is started in hot wallet
 
-#add pause in here process complete
-#ask if user would like to do the done checks
 sync_node_blocks
 sync_node_mnsync
 get_mn_count
