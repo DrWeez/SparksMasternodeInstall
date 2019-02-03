@@ -143,11 +143,9 @@ purgeOldInstallation() {
       sudo ufw delete allow 8890/tcp > /dev/null 2>&1
       #remove old Service
       sudo rm /lib/systemd/system/$COIN_NAME.service > /dev/null 2>&1
-      sudo rm ~/$CONFIGFOLDER/$COIN_NAME.service > /dev/null 2>&1
+      #sudo rm ~/$CONFIGFOLDER/$COIN_NAME.service > /dev/null 2>&1
       #delete whole sparks folder
-      sudo rm -rf ~/$CONFIGFOLDER > /dev/null 2>&1
-echo "do purge check"
-pause
+      sudo rm -rf /$CONFIGFOLDER > /dev/null 2>&1
     fi
 
 }
@@ -309,6 +307,9 @@ function enter_SSH_RSA_key() {
 
 if [[ $ADVANCE == '1' ]]; then
 
+#check if there is already a ~/.ssh/authorized_keys file and skip
+#fresh upgrade option
+
 echo -e "${GREEN}Would you like to secure your VPS and restrict log on with a SSH-RSA key? [Y/n]${NC}"
 echo -e "${RED}IF YOU DO NOT KNOW WHAT THIS IS PRESS N/n${NC}"
 read -e USERSSHKEY
@@ -328,8 +329,6 @@ fi
 function secure_vps_ssh() {
 
   if [[ ("$USERSSHKEY" == "y" || "$USERSSHKEY" == "Y" || "$USERSSHKEY" == "") ]]; then
-
-#check lenth of key greater than 0
 
     mkdir -p ~/.ssh; touch ~/.ssh/authorized_keys; chmod 700 ~/.ssh
     echo \
@@ -755,7 +754,7 @@ function rebootVPS() {
 function setup_node() {
   get_ip
   create_config
-  if ["$CLEANSPARKS" = "false" ]; then
+  if [ $CLEANSPARKS = "false" ]; then
 #else
   create_key
 fi
@@ -801,7 +800,6 @@ function pause(){
 clear
 defineuserpath
 intro
-
 spk_versioncheck
 
 ##
@@ -818,7 +816,14 @@ fi
 if [ $CLEANSPARKS = "true" ] ; then
   clear
   #enter_key
-  enter_SSH_RSA_key
+
+  if [ -e ~/.ssh/authorized_keys ]
+  then
+      echo -e "${GREEN}skipping step, SSH authorized_keys file was found.${NC}"
+  else
+      enter_SSH_RSA_key
+  fi
+
   purgeOldInstallation
   prepare_system
   download_node
