@@ -590,7 +590,7 @@ echo $COIN_VERSION
     if [[ ("$FRESHUPGRADE" == "n" || "$FRESHUPGRADE" == "N") ]]; then
         echo -e "${RED}Are you sure that you have backed up your data? [Y/n] "
         read -e AREYOUSURE
-        if [[("$AREYOUSURE"== "y" || "$AREYOUSURE" == "Y")]]
+        if [[ ("$AREYOUSURE"== "y" || "$AREYOUSURE" == "Y") ]] ; then
       CLEANSPARKS='true'
     else
       echo -e "${RED}you must be sure to continue with a fresh install "
