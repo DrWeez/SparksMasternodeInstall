@@ -6,38 +6,51 @@
 #|       /|   |___||   :   ||   :  \ |     \ |       /
 #|__:___/ |___|    |___|   ||   |___\|      \|__:___/
 #   :                  |___||___|    |___\  /   :
-#  v 12.3.2                               \/ '
+#  v 1.0.1                                \/ '
 # This is a custom version for my own deployments
 
 # please use official version
 # https://github.com/SparksReborn/SparksMasternodeInstall
 
+#V 1.01
+#updated COIN_VERSION
+#updated COIN_TGZ
+#ADDED Upgrade / Fresh instrall checks and options
+#added clean up COIN_EPATH
+#removed root user check
+
+
+#V1.0.0
+#first releases
 #added fail to FailtoBan
 #added creation of upgrade.sh because i am LAZY :D
 #added checks
 #changed install for root or non root user
 #added option to secure with SSH-RSA-KEY
 #added elivated privilages for non root install
-# info file
+#added info file
+#some code from Real_Bit_Yoda's sparks intall script
 
-
-#USERNAME=newuser
+#USERNAME=
 #useradd -m -s /bin/bash -G adm,systemd-journal,sudo $USERNAME && passwd $USERNAME
 #su $USERNAME
 #cd ~/
 
 
-ADVANCE='1'
+
 USER=$USER
 TMP_FOLDER=$(mktemp -d)
 CONFIG_FILE='sparks.conf'
 COIN_DAEMON='sparksd'
-COIN_VERSION='v0.12.3.2'
+COIN_VERSION='0.12.3.4'
+####check
 COIN_WALLET_VERSION='61000'
+###
 COIN_CLI='sparks-cli'
 COIN_PATH='/usr/local/bin/'
 COIN_REPO='https://github.com/SparksReborn/sparkspay.git'
-COIN_TGZ='https://github.com/SparksReborn/sparkspay/releases/download/v0.12.3.2/sparkscore-0.12.3.2-linux64.tar.gz'
+COIN_TGZ='https://github.com/sparkspay/sparks/releases/download/v0.12.3.4-rc0/sparkscore-0.12.3.4-RC0-x86_64-linux-gnu.tar.gz'
+#COIN_TGZ='https://github.com/SparksReborn/sparkspay/releases/download/v0.12.3.2/sparkscore-0.12.3.2-linux64.tar.gz'
 COIN_EPATH='sparkscore-0.12.3/bin'
 COIN_BOOTSTRAP='https://github.com/SparksReborn/sparkspay/releases/download/bootstrap/bootstrap.dat'
 COIN_ZIP=$(echo $COIN_TGZ | awk -F'/' '{print $NF}')
@@ -53,6 +66,9 @@ SSH_RSA_KEY=''
 sencheck=''
 HOMEPATH=''
 CONFIGFOLDER=''
+UPGRADESPARKS='false'
+CLEANSPARKS='false'
+ADVANCE='1'
 
 NODEIP=$(curl -s4 icanhazip.com)
 
@@ -64,7 +80,6 @@ RED='\033[0;31m'
 GREEN="\033[0;32m"
 NC='\033[0m'
 MAG='\e[1;35m'
-
 
 function defineuserpath() {
     if [[ $USER = "root" ]]; then
@@ -84,7 +99,7 @@ function intro(){
   |       /|   |___||   :   ||   :  \ |     \ |       /
   |__:___/ |___|    |___|   ||   |___\|      \|__:___/
      :                  |___||___|    |___\  /   :
-   Auto Installer v1.0.0                   \/ '
+   Auto Installer v1.0.1                   \/ '
 
   echo -e "${GREEN}This script will prepair your VPS and install the latest version of ${RED}$COIN_NAME${NC}"
   echo -e "${GREEN}After installation and configuration the script run a series of tests   "
@@ -95,10 +110,8 @@ function intro(){
   echo
   echo -e "${GREEN}When the ${RED}$COIN_NAME${NC} masternode is synced you will be prompted to  ${NC}"
   echo -e "${GREEN}start the master node in the windows wallet. ${NC}"
-#  echo -e "${GREEN}restart the VPS, Please do not skip this step.  ${NC}"
-#  echo -e "${GREEN}After the VPS has restarted you can start the alias in your windows wallet ${NC}"
   echo
-  echo -e "${RED}The script will over write your crontab, please backup custom infomation before you continue ${NC}"
+  echo -e "${RED}The script will clear your crontab, please backup custom infomation before you continue ${NC}"
   echo -e "${RED}Press CTR+C to exit now if you need to backup info in your crontab ${NC}"
   echo
   echo -e "${YELLOW}Lets get started,"
@@ -107,22 +120,34 @@ function intro(){
 }
 
 purgeOldInstallation() {
-    echo -e "${GREEN}Searching for and removing old $COIN_NAME files${NC}"
+    echo -e "${GREEN}Cleaning up old $COIN_NAME files${NC}"
     #kill wallet daemon
     sudo systemctl stop $COIN_NAME.service > /dev/null 2>&1
     sudo killall $COIN_DAEMON > /dev/null 2>&1
-    #remove old ufw port allow
-    sudo ufw delete allow 8890/tcp > /dev/null 2>&1
     #remove old files
 	  sudo rm $CONFIGFOLDER/bootstrap.dat.old > /dev/null 2>&1
 	  cd /usr/local/bin && sudo rm $COIN_CLI $COIN_DAEMON > /dev/null 2>&1 && cd
     cd /usr/bin && sudo rm $COIN_CLI $COIN_DAEMON > /dev/null 2>&1 && cd
-    sudo rm -rf ~/$CONFIGFOLDER > /dev/null 2>&1
-    #remove binaries and Sparks utilities
-    #removed
-    #cd /usr/bin && sudo rm Sparks-cli Sparks-tx Sparksd > /dev/null 2>&1 && cd
-    #cd /usr/local/bin && sudo rm Sparks-cli Sparks-tx Sparksd > /dev/null 2>&1 && cd
-  #  echo -e "${GREEN}Clean up Done${NONE}";
+    # remove old extracted files
+    sudo rm -rf $COIN_EPATH >/dev/null 2>&1
+    sudo mv $HOMEPATH/$COIN_NAME.info $HOMEPATH/$COIN_NAME.info.old >/dev/null 2>&1
+
+
+#if fresh installs
+    #remove the whole sparks folder?
+    #this should be for Fresh install only
+    #when upgrading the blockchain data should not be removed.?
+    if [[ $CLEANSPARKS='true' ]] ; then
+      #remove old ufw port allow
+      sudo ufw delete allow 8890/tcp > /dev/null 2>&1
+      #remove old Service
+      sudo rm /lib/systemd/system/$COIN_NAME.service > /dev/null 2>&1
+      sudo rm ~/$CONFIGFOLDER/$COIN_NAME.service > /dev/null 2>&1
+      #delete whole sparks folder
+      sudo rm -rf ~/$CONFIGFOLDER > /dev/null 2>&1
+
+    fi
+
 }
 
 function install_sentinel() {
@@ -136,9 +161,7 @@ function install_sentinel() {
   echo  "* * * * * cd $CONFIGFOLDER/sentinel && ./venv/bin/python bin/sentinel.py >> $CONFIGFOLDER/sentinel.log 2>&1" > $CONFIGFOLDER/$COIN_NAME.cron
   crontab $CONFIGFOLDER/$COIN_NAME.cron
   rm $CONFIGFOLDER/$COIN_NAME.cron >/dev/null 2>&1
-  #add for non reboot
-  #sparks_conf=/home/evan82/.sparkscore/sparks.conf
-  #sudo sed -i  "s/.*PermitRootLogin no/PermitRootLogin yes/g" /etc/ssh/sshd_config >/dev/null 2>&1
+  #add for non root user
 
 cat << EOF > $CONFIGFOLDER/sentinel/sentinel.conf
 # specify path to sparks.conf or leave blank
@@ -159,7 +182,8 @@ EOF
 }
 
 function download_node() {
-  echo -e "${GREEN}Downloading and Installing VPS $COIN_NAME Daemon${NC}"
+  #download and install
+  echo -e "${GREEN}Downloading and Installing $COIN_NAME Daemon${NC}"
   cd $TMP_FOLDER >/dev/null 2>&1
   wget -q $COIN_TGZ
   compile_error
@@ -171,6 +195,7 @@ function download_node() {
   sudo cp $COIN_DAEMON $COIN_CLI $COIN_PATH
   cd ~ >/dev/null 2>&1
   rm -rf $TMP_FOLDER >/dev/null 2>&1
+  rm -rf $COIN_EPATH >/dev/null 2>&1
   #clear
   echo -e "${GREEN}$COIN_NAME Daemon is installed${NC}"
 }
@@ -224,7 +249,7 @@ sudo cp $CONFIGFOLDER/$COIN_NAME.service /lib/systemd/system/$COIN_NAME.service
 echo
   echo -e "${GREEN}Starting $COIN_NAME service and initiating checks ${NC}"
 echo
-  sleep 20
+  sleep 60
 }
 
 function create_config() {
@@ -243,7 +268,6 @@ daemon=1
 port=$COIN_PORT
 EOF
 
-#test apply permissions to conf file
 sudo chown -R $USER:$USER ~/
 
 }
@@ -255,7 +279,8 @@ cd $CONFIGFOLDER
 }
 
 function created_upgrade() {
-#to run use $ bash upgrade.sh
+#use this upgrasde script to keep your VPS up to date
+#to run -> $ bash upgrade.sh
 cd
 cat << EOF > upgrade.sh
   #!/bin/bash
@@ -272,6 +297,8 @@ read -e USERGENKEY
 if [[ ("$USERGENKEY" == "y" || "$USERGENKEY" == "Y" || "$USERGENKEY" == "") ]]; then
   echo -e "Please Enter your ${RED}$COIN_NAME ${GREEN}Masternode GEN Key${NC}."
   read -e COINKEY
+#add check to verify masternode key lenth
+
 fi
 
 }
@@ -292,7 +319,7 @@ echo -e "${RED}Press CTR+C to exit now if you need are NOT sure ${NC}"
 read -e SSH_RSA_KEY
 fi
 else
-echo -e "${GREEN}skipping step, enable ADVANCE mode to include.${NC}"
+echo -e "${GREEN}skipping step, enable ADVANCE mode to include VPS SSH security steps.${NC}"
 fi
 }
 
@@ -408,25 +435,35 @@ fi
 
 function checks() {
 if [[ $(lsb_release -d) != *16.04* ]]; then
-  echo -e "${RED}You are not running Ubuntu 16.04. Installation is cancelled.${NC}"
+  if [[ $(lsb_release -d) != *18.04* ]]; then
+  echo -e "${RED}You are not running Ubuntu 16.04. or Ubuntu 18.04 Installation is cancelled.${NC}"
   exit 1
+  fi
 fi
 
 ## remove this check when not root
 ## WIP
-if [[ $EUID -ne 0 ]]; then
-   echo -e "${RED}$0 must be run as root.${NC}"
+#if [[ $EUID -ne 0 ]]; then
+#   echo -e "${RED}$0 must be run as root.${NC}"
    #exit 1
-   echo -e "${RED}$0 current user is not root.${NC}"
-   pause
-fi
+#   echo -e "${RED}$0 current user is not root.${NC}"
+#   pause
+#fi
 
 #this will be tested/changed with next upgrade
-if [ -n "$(pidof $COIN_DAEMON)" ] || [ -e "$COIN_DAEMOM" ] ; then
-  echo -e "${RED}$COIN_NAME is already installed.${NC}"
-  exit 1
-fi
-}
+#if [ -n "$(pidof $COIN_DAEMON)" ] || [ -e "$COIN_DAEMOM" ] ; then
+
+
+  #spk_version
+#check if the version is smaller than the Installer
+#if smaller upgrade
+#if equil do fresh install?
+
+#  echo -e "${RED}$COIN_NAME is already installed.${NC}"
+#  exit 1
+
+#fi
+#}
 
 function prepare_system() {
 echo -e "${GREEN}Preparing the VPS.${NC}"
@@ -543,6 +580,54 @@ STIL_BUSY="false"
 fi
 }
 
+function spk_versioncheck() {
+
+  if [ -n "$(pidof $COIN_DAEMON)" ] || [ -e "$COIN_DAEMOM" ] ; then
+    spk_version=$($COIN_CLI getinfo | grep version)
+    spk_version=${spk_version#*:}
+    spk_version=${spk_version%,*}
+
+  fi
+
+  if [ $spk_version -lt $COIN_VERSION ] ; then
+#wouyld you like to upgrade or complete a fresh install
+echo -e "${RED}$COIN_NAME version $spk_version is already installed.${NC}"
+echo -e "Would you like to upgrade[Y] $COIN_NAME or complete a fresh install [n] [Y/n] : "
+echo -e "an upgrade [Y] will keep the current blockchan folder and sentinel installation for $COIN_NAME "
+echo -e "a complete a fresh install [n] will completely remove the old installation folder and re sysnc the blockchain from scratch!"
+read -e FRESHUPGRADE
+else
+  echo -e "${RED}The latest version of $COIN_NAME ($spk_version) is already installed.${NC}"
+echo -e "Press [n] to complete a fresh install or [e] to exit [e/n] : "
+read -e FRESHUPGRADE
+  fi
+
+if [[ ("$FRESHUPGRADE" == "y" || "$FRESHUPGRADE" == "Y" || "$FRESHUPGRADE" == "") ]]; then
+    UPGRADESPARKS='true'
+fi
+
+if [[ ("$FRESHUPGRADE" == "n" || "$FRESHUPGRADE" == "N") ]]; then
+    CLEANSPARKS='true'
+fi
+
+if [[ ("$FRESHUPGRADE" == "e" || "$FRESHUPGRADE" == "E") ]]; then
+    echo -e "${RED}$0 Script aborted.${NC}"
+    exit 1
+fi
+    #spk_version
+  #check if the version is smaller than the Installer
+  #if smaller upgrade
+  #if equil do fresh install?
+
+  #  echo -e "${RED}$COIN_NAME is already installed.${NC}"
+  #  exit 1
+
+  #fi
+  #}
+
+
+}
+
 function walletloadedcheck() {
   sync_msg="loading wallet, will retry in ..."
   sync_countdown
@@ -598,7 +683,7 @@ $COIN_NAME Github   : https://github.com/SparksReborn/sparkspay
 $COIN_NAME Discord  : https://discord.gg/6ktdN8Z
 $COIN_NAME Telegram : https://t.me/SparksCoin
 $COIN_NAME Offical explorer: http://explorer.sparkscoin.io/
-$COIN_NAME Windows Wallet Guide. https://github.com/Sparks/master/README.md
+$COIN_NAME Windows Wallet Guide. TBA
 
 Usefull Commands
 
@@ -610,14 +695,14 @@ Get $COIN_NAME mnsync status      : $COIN_CLI mnsync status
 
 At the time of configuring this $COIN_NAME masternode there were $mncount active masternodes.
 
-First payment will only take place after roughly $mnpay hours and only after the colladeral
-payment has a minimum $mncount confermations.
+First payment will only take place after roughly $mnpay hours and only after the collateral
+payment has a minimum $mncount confirmations.
 
-  Configuration file is : $CONFIGFOLDER/$CONFIG_FILE"
+  Configuration file is : $CONFIGFOLDER/$CONFIG_FILE
   VPS_IP                : $NODEIP:$COIN_PORT
   MASTERNODE GENKEY is  : $COINKEY$
-  Sentinel is installed : $CONFIGFOLDER/sentinel"
-  Sentinel logs         : $CONFIGFOLDER/sentinel.log"
+  Sentinel is installed : $CONFIGFOLDER/sentinel
+  Sentinel logs         : $CONFIGFOLDER/sentinel.log
   Sentinal test         : $sencheck
   Fail2ban logs         :
 EOF
@@ -692,17 +777,41 @@ function setup_node() {
   configure_systemd
 }
 
+function upgrade_node() {
+
+#upgrade will run purgeOldInstallation
+#prepair system (upgrade linux )
+#download and install new daemon
+
+#all checks will be run
+
+#function useless atm but created for future requirments?
+echo -e "${GREEN}Upgrading $COIN_CLI $COIN_DAEMON ONLY.${NC}"
+}
+
 ##### Main #####
 clear
 defineuserpath
 intro
-enter_key
-enter_SSH_RSA_key
-purgeOldInstallation
-##### checks #####
-prepare_system
-download_node
-setup_node
+
+spk_versioncheck
+
+##
+if [[$UPGRADESPARKS == 'true' ]] ; then
+  purgeOldInstallation
+  prepare_system
+  download_node
+  upgrade_node
+else
+  enter_key
+  enter_SSH_RSA_key
+  purgeOldInstallation
+  prepare_system
+  download_node
+  setup_node
+fi
+
+
 #add pause in here process complete
 #ask if user would like to do the done checks
 sync_node_blocks
