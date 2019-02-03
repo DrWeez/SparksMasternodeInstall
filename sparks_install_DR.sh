@@ -42,9 +42,10 @@ USER=$USER
 TMP_FOLDER=$(mktemp -d)
 CONFIG_FILE='sparks.conf'
 COIN_DAEMON='sparksd'
-COIN_VERSION='0.12.3.4'
+COIN_VERSION='0120304'
 ####check
 COIN_WALLET_VERSION='61000'
+COIN_PROTOCAL_VERSION='70208'
 ###
 COIN_CLI='sparks-cli'
 COIN_PATH='/usr/local/bin/'
@@ -114,9 +115,9 @@ function intro(){
   echo -e "${RED}The script will clear your crontab, please backup custom infomation before you continue ${NC}"
   echo -e "${RED}Press CTR+C to exit now if you need to backup info in your crontab ${NC}"
   echo
-  echo -e "${YELLOW}Lets get started,"
+  echo -e "${YELLOW}Lets get started, Press [Enter] key to continue..."
   echo
-
+pause
 }
 
 purgeOldInstallation() {
@@ -249,7 +250,7 @@ sudo cp $CONFIGFOLDER/$COIN_NAME.service /lib/systemd/system/$COIN_NAME.service
 echo
   echo -e "${GREEN}Starting $COIN_NAME service and initiating checks ${NC}"
 echo
-  sleep 60
+  sleep 30
 }
 
 function create_config() {
@@ -440,30 +441,7 @@ if [[ $(lsb_release -d) != *16.04* ]]; then
   exit 1
   fi
 fi
-
-## remove this check when not root
-## WIP
-#if [[ $EUID -ne 0 ]]; then
-#   echo -e "${RED}$0 must be run as root.${NC}"
-   #exit 1
-#   echo -e "${RED}$0 current user is not root.${NC}"
-#   pause
-#fi
-
-#this will be tested/changed with next upgrade
-#if [ -n "$(pidof $COIN_DAEMON)" ] || [ -e "$COIN_DAEMOM" ] ; then
-
-
-  #spk_version
-#check if the version is smaller than the Installer
-#if smaller upgrade
-#if equil do fresh install?
-
-#  echo -e "${RED}$COIN_NAME is already installed.${NC}"
-#  exit 1
-
-#fi
-#}
+}
 
 function prepare_system() {
 echo -e "${GREEN}Preparing the VPS.${NC}"
@@ -576,55 +554,38 @@ vpsblock=${vpsblock%,*}
 if [ "$netblock" -gt "$vpsblock" ]; then
   block_countdown
 else
-STIL_BUSY="false"
+  STIL_BUSY="false"
 fi
 }
 
 function spk_versioncheck() {
+  clear
+spk_version=$($COIN_CLI getinfo | grep -w version)
+spk_version=${spk_version#*:}
+spk_version=${spk_version%,*}
 
-  if [ -n "$(pidof $COIN_DAEMON)" ] || [ -e "$COIN_DAEMOM" ] ; then
-    spk_version=$($COIN_CLI getinfo | grep version)
-    spk_version=${spk_version#*:}
-    spk_version=${spk_version%,*}
-
-  fi
-
-  if [ $spk_version -lt $COIN_VERSION ] ; then
-#wouyld you like to upgrade or complete a fresh install
-echo -e "${RED}$COIN_NAME version $spk_version is already installed.${NC}"
-echo -e "Would you like to upgrade[Y] $COIN_NAME or complete a fresh install [n] [Y/n] : "
-echo -e "an upgrade [Y] will keep the current blockchan folder and sentinel installation for $COIN_NAME "
-echo -e "a complete a fresh install [n] will completely remove the old installation folder and re sysnc the blockchain from scratch!"
-read -e FRESHUPGRADE
-else
-  echo -e "${RED}The latest version of $COIN_NAME ($spk_version) is already installed.${NC}"
-echo -e "Press [n] to complete a fresh install or [e] to exit [e/n] : "
-read -e FRESHUPGRADE
-  fi
-
-if [[ ("$FRESHUPGRADE" == "y" || "$FRESHUPGRADE" == "Y" || "$FRESHUPGRADE" == "") ]]; then
-    UPGRADESPARKS='true'
-fi
-
-if [[ ("$FRESHUPGRADE" == "n" || "$FRESHUPGRADE" == "N") ]]; then
-    CLEANSPARKS='true'
-fi
-
-if [[ ("$FRESHUPGRADE" == "e" || "$FRESHUPGRADE" == "E") ]]; then
-    echo -e "${RED}$0 Script aborted.${NC}"
-    exit 1
-fi
-    #spk_version
-  #check if the version is smaller than the Installer
-  #if smaller upgrade
-  #if equil do fresh install?
-
-  #  echo -e "${RED}$COIN_NAME is already installed.${NC}"
-  #  exit 1
-
-  #fi
-  #}
-
+    if [[ $spk_version -lt $COIN_VERSION ]] ; then
+      #wouyld you like to upgrade or complete a fresh install
+      echo -e "${RED}$COIN_NAME version $spk_version is already installed.${NC}"
+      echo -e "Would you like to upgrade[Y] $COIN_NAME or complete a fresh install [n] [Y/n] : "
+      echo -e "an upgrade [Y] will keep the current blockchan folder and sentinel installation for $COIN_NAME "
+      echo -e "a complete a fresh install [n] will completely remove the old installation folder and re sysnc the blockchain from scratch!"
+      read -e FRESHUPGRADE
+    else
+      echo -e "${RED}The latest version of $COIN_NAME ($spk_version) is already installed.${NC}"
+      echo -e "Press [n] to complete a fresh install or [e] to exit [e/n] : "
+      read -e FRESHUPGRADE
+    fi
+    if [[ ("$FRESHUPGRADE" == "y" || "$FRESHUPGRADE" == "Y" || "$FRESHUPGRADE" == "") ]]; then
+      UPGRADESPARKS='true'
+    fi
+    if [[ ("$FRESHUPGRADE" == "n" || "$FRESHUPGRADE" == "N") ]]; then
+      CLEANSPARKS='true'
+    fi
+    if [[ ("$FRESHUPGRADE" == "e" || "$FRESHUPGRADE" == "E") ]]; then
+      echo -e "${RED}$0 Script aborted.${NC}"
+      exit 1
+    fi
 
 }
 
@@ -787,6 +748,10 @@ function upgrade_node() {
 
 #function useless atm but created for future requirments?
 echo -e "${GREEN}Upgrading $COIN_CLI $COIN_DAEMON ONLY.${NC}"
+}
+
+function pause(){
+   read -p "$*"
 }
 
 ##### Main #####
