@@ -462,6 +462,8 @@ sudo apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::=
 build-essential libtool autoconf libssl-dev libboost-dev libboost-chrono-dev libboost-filesystem-dev libboost-program-options-dev \
 libboost-system-dev libboost-test-dev libboost-thread-dev sudo automake git wget curl libdb4.8-dev bsdmainutils libdb4.8++-dev \
 libminiupnpc-dev libgmp3-dev ufw pkg-config libevent-dev  libdb5.3++ unzip libzmq5 >/dev/null 2>&1
+
+if [ $CLEANSPARKS = "false" ] ; then
 if [ "$?" -gt "0" ];
   then
     echo -e "${RED}Not all required packages were installed properly. Try to install them manually by running the following commands:${NC}\n"
@@ -473,6 +475,7 @@ if [ "$?" -gt "0" ];
 libboost-program-options-dev libboost-system-dev libboost-test-dev libboost-thread-dev sudo automake git curl libdb4.8-dev \
 bsdmainutils libdb4.8++-dev libminiupnpc-dev libgmp3-dev ufw pkg-config libevent-dev libdb5.3++ unzip libzmq5"
  exit 1
+fi
 fi
 
 }
@@ -490,7 +493,6 @@ msg1="The block count will only move once the bootstrap has been loaded into mem
 msg2="Currntly $vpsblock block's out of $netblock processed   "
 clear
 
-clear
 
 #still need to play with this layout
   tput cup 10 5
@@ -536,7 +538,10 @@ echo
 
 function get_mn_count() {
 wget -q http://explorer.sparkscoin.io/api/getmasternodecount -O getmasternodecount
-mncount=$(cat "getmasternodecount")
+mncount=$(cat "getmasternodecount" | grep "total")
+mncount=${mncount#*:}
+mncount=${mncount%,*}
+
 mnpay="$(($mncount * 3 / 60))"
 rm getmasternodecount
 }
@@ -571,7 +576,7 @@ spk_version=${spk_version%,*}
       echo -e ""
       echo -e "Would you like to upgrade[Y] $COIN_NAME or preform a fresh install[n] [Y/n] : "
       echo -e ""
-      echo -e "An upgrade will keep the current blockchan and sentinel and configuiration "
+      echo -e "An upgrade will keep the current blockchan, sentinel and configuiration "
       echo -e ""
       echo -e "a fresh install [n] will completely remove the old installation folder and configuration"
       echo -e "as well as remove all $COIN_NAME files, Make sure you have backed up your data "
@@ -584,6 +589,10 @@ spk_version=${spk_version%,*}
       read -e FRESHUPGRADE
     fi
     if [[ ("$FRESHUPGRADE" == "y" || "$FRESHUPGRADE" == "Y" || "$FRESHUPGRADE" == "") ]]; then
+#check if the sparks.service file is there
+#if not suggest a fresh install
+
+
       UPGRADESPARKS="true"
     fi
     if [[ ("$FRESHUPGRADE" == "n" || "$FRESHUPGRADE" == "N") ]]; then
@@ -591,6 +600,10 @@ spk_version=${spk_version%,*}
       read -e AREYOUSURE
         if [[ ("$AREYOUSURE" == "y" || "$AREYOUSURE" == "Y") ]]; then
           CLEANSPARKS='true'
+          COINKEY=$(cat $CONFIGFOLDER/$CONFIG_FILE | grep masternodeprivkey)
+          COINKEY=${COINKEY#*=}
+          #could read and reuse the masternodeprivkey before removing it
+          #could back up the wallet
         else
           echo -e "${RED}you must be sure to continue with a fresh install "
           exit 1
@@ -739,7 +752,10 @@ function rebootVPS() {
 function setup_node() {
   get_ip
   create_config
+  #if [[ ("$CLEANSPARKS" == "y" || "$CLEANSPARKS" == "Y" || "$CLEANSPARKS" == "") ]]; then
+#else
   create_key
+#fi
   update_config
   enable_firewall
   grab_bootstrap
@@ -771,6 +787,7 @@ function upgrade_node() {
 
 #function useless atm but created for future requirments?
 echo -e "${GREEN}$COIN_CLI $COIN_DAEMON Upgrade Complete! ${NC}"
+sudo systemctl start $COIN_NAME.service >/dev/null 2>&1
 }
 
 function pause(){
@@ -791,7 +808,24 @@ if [ $UPGRADESPARKS = "true" ] ; then
   #prepare_system
   download_node
   upgrade_node
-else
+
+fi
+
+#do if CLEANSPARKS
+if [ $CLEANSPARKS = "true" ] ; then
+  clear
+  #enter_key
+  enter_SSH_RSA_key
+  purgeOldInstallation
+  prepare_system
+  download_node
+  setup_node
+
+fi
+
+if [ $UPGRADESPARKS = "false" ] ; then
+#do if upgrade false
+
   clear
   enter_key
   enter_SSH_RSA_key
