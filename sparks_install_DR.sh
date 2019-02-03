@@ -42,7 +42,7 @@ USER=$USER
 TMP_FOLDER=$(mktemp -d)
 CONFIG_FILE='sparks.conf'
 COIN_DAEMON='sparksd'
-COIN_VERSION='0120304'
+COIN_VERSION='120304'
 ####check
 COIN_WALLET_VERSION='61000'
 COIN_PROTOCAL_VERSION='70208'
@@ -445,7 +445,7 @@ fi
 
 function prepare_system() {
 echo -e "${GREEN}Preparing the VPS.${NC}"
-echo -e "${GREEN}Estimated run time on a fresh VPS upto 5 min  ${NC}"
+echo -e "${GREEN}Estimated run time for the following three steps is 5 min  ${NC}"
 sudo DEBIAN_FRONTEND=noninteractive apt-get update > /dev/null 2>&1
 echo -e "${GREEN} Step 1 / 3 ${RED}apt-get update ${GREEN}done ${NC}"
 sudo DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq upgrade >/dev/null 2>&1
@@ -455,7 +455,7 @@ echo -e "${GREEN} Step 3 / 3 ${RED}apt dist-upgrade ${GREEN}done ${NC}"
 sudo apt install -y software-properties-common >/dev/null 2>&1
 echo -e "${GREEN} Adding bitcoin PPA repository"
 sudo apt-add-repository -y ppa:bitcoin/bitcoin >/dev/null 2>&1
-echo -e "${GREEN} Installing required packages. This may take some time to finish.${NC}"
+echo -e "${GREEN} Installing or upgrading required packages. This may take some time to finish.${NC}"
 sudo apt-get update >/dev/null 2>&1
 sudo apt-get install libzmq3-dev -y >/dev/null 2>&1
 sudo apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" make software-properties-common \
@@ -563,19 +563,18 @@ function spk_versioncheck() {
 spk_version=$($COIN_CLI getinfo | grep -w version)
 spk_version=${spk_version#*:}
 spk_version=${spk_version%,*}
-echo $spk_version
-echo $COIN_VERSION
+
     if [[ $spk_version -lt $COIN_VERSION ]] ; then
       #wouyld you like to upgrade or complete a fresh install
       echo -e ""
       echo -e "${RED}$COIN_NAME version $spk_version is already installed.${NC}"
       echo -e ""
-      echo -e "Would you like to upgrade[Y] $COIN_NAME or complete a fresh install [n] [Y/n] : "
+      echo -e "Would you like to upgrade[Y] $COIN_NAME or preform a fresh install[n] [Y/n] : "
       echo -e ""
       echo -e "An upgrade will keep the current blockchan and sentinel and configuiration "
       echo -e ""
       echo -e "a fresh install [n] will completely remove the old installation folder and configuration"
-      echo -e "a fresh install will remove all $COIN_NAME files, Make sure you have backed up your data "
+      echo -e "as well as remove all $COIN_NAME files, Make sure you have backed up your data "
       echo -e ""
       echo -e "Upgrade[Y] $COIN_NAME or Fresh install [n] [Y/n] : "
       read -e FRESHUPGRADE
@@ -585,16 +584,17 @@ echo $COIN_VERSION
       read -e FRESHUPGRADE
     fi
     if [[ ("$FRESHUPGRADE" == "y" || "$FRESHUPGRADE" == "Y" || "$FRESHUPGRADE" == "") ]]; then
-      UPGRADESPARKS='true'
+      UPGRADESPARKS="true"
     fi
     if [[ ("$FRESHUPGRADE" == "n" || "$FRESHUPGRADE" == "N") ]]; then
-        echo -e "${RED}Are you sure that you have backed up your data? [Y/n] "
-        read -e AREYOUSURE
-        if [[ ("$AREYOUSURE"== "y" || "$AREYOUSURE" == "Y") ]] ; then
-      CLEANSPARKS='true'
-    else
-      echo -e "${RED}you must be sure to continue with a fresh install "
-      exit 1
+      echo -e "${RED}Are you sure that you have backed up your data? [Y/n] "
+      read -e AREYOUSURE
+        if [[ ("$AREYOUSURE" == "y" || "$AREYOUSURE" == "Y") ]]; then
+          CLEANSPARKS='true'
+        else
+          echo -e "${RED}you must be sure to continue with a fresh install "
+          exit 1
+        fi
     fi
     if [[ ("$FRESHUPGRADE" == "e" || "$FRESHUPGRADE" == "E") ]]; then
       echo -e "${RED}$0 Script aborted.${NC}"
@@ -754,6 +754,15 @@ function setup_node() {
 
 function upgrade_node() {
 
+  echo -e "${GREEN}Upgrading the VPS.${NC}"
+  echo -e "${GREEN}Estimated run time for the following three steps is 5 min  ${NC}"
+  sudo DEBIAN_FRONTEND=noninteractive apt-get update > /dev/null 2>&1
+  echo -e "${GREEN} Step 1 / 3 ${RED}apt-get update ${GREEN}done ${NC}"
+  sudo DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq upgrade >/dev/null 2>&1
+  echo -e "${GREEN} Step 2 / 3 ${RED}apt-get upgrade ${GREEN}done ${NC}"
+  sudo DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq dist-upgrade >/dev/null 2>&1
+  echo -e "${GREEN} Step 3 / 3 ${RED}apt dist-upgrade ${GREEN}done ${NC}"
+
 #upgrade will run purgeOldInstallation
 #prepair system (upgrade linux )
 #download and install new daemon
@@ -761,7 +770,7 @@ function upgrade_node() {
 #all checks will be run
 
 #function useless atm but created for future requirments?
-echo -e "${GREEN}Upgrading $COIN_CLI $COIN_DAEMON ONLY.${NC}"
+echo -e "${GREEN}$COIN_CLI $COIN_DAEMON Upgrade Complete! ${NC}"
 }
 
 function pause(){
@@ -776,12 +785,14 @@ intro
 spk_versioncheck
 
 ##
-if [[$UPGRADESPARKS == 'true' ]] ; then
+if [ $UPGRADESPARKS = "true" ] ; then
+  clear
   purgeOldInstallation
-  prepare_system
+  #prepare_system
   download_node
   upgrade_node
 else
+  clear
   enter_key
   enter_SSH_RSA_key
   purgeOldInstallation
