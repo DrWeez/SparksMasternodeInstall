@@ -565,12 +565,12 @@ fi
 
 function spk_versioncheck() {
   clear
-  if [ -e $CONFIGFOLDER/$CONFIG_FILE ] ;  then
+  if [ -e $CONFIGFOLDER/$CONFIG_FILE ];  then
     spk_version=$($COIN_CLI getinfo | grep -w version)
     spk_version=${spk_version#*:}
     spk_version=${spk_version%,*}
 
-        if [[ $spk_version -lt $COIN_VERSION ]] ; then
+        if [[ $spk_version -lt $COIN_VERSION ]]; then
           #wouyld you like to upgrade or complete a fresh install
           echo -e ""
           echo -e "${RED}$COIN_NAME version $spk_version is already installed.${NC}"
@@ -616,7 +616,7 @@ function spk_versioncheck() {
           echo -e "${RED}$0 Script aborted.${NC}"
           exit 1
         fi
-  else
+  #else
       #no else do full install
   fi
 
@@ -662,6 +662,7 @@ function check_mnstart() {
 }
 
 function information() {
+  clear
   cat << EOF >> $HOMEPATH/$COIN_NAME.info
 
 .________._______ .______  .______  .____/\ .________
