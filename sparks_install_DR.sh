@@ -565,7 +565,7 @@ fi
 
 function spk_versioncheck() {
   clear
-  if [ -e $CONFIGFOLDER/$CONFIG_FILE ];  then
+  if [ -e $CONFIGFOLDER/$CONFIG_FILE ]; then
     spk_version=$($COIN_CLI getinfo | grep -w version)
     spk_version=${spk_version#*:}
     spk_version=${spk_version%,*}
@@ -616,9 +616,7 @@ function spk_versioncheck() {
           echo -e "${RED}$0 Script aborted.${NC}"
           exit 1
         fi
-  #else
-      #no else do full install
-  fi
+   fi
 
 
 }
