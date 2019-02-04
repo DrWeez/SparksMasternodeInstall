@@ -527,7 +527,7 @@ echo -n "$sync_msg2"
   l=${#sync_msg}
 l=$(( l+5 ))
 
-for i in {40..01}
+for i in {30..01}
 do
 tput cup 10 $l
 echo -n "$i"
@@ -595,7 +595,9 @@ function spk_versioncheck() {
           COINKEY=$(cat $CONFIGFOLDER/$CONFIG_FILE | grep masternodeprivkey)
           COINKEY=${COINKEY#*=}
           UPGRADESPARKS="true"
-    #      #check if the sparks.service file is there
+    #     if [ -e $CONFIGFOLDER/$COIN_NAME.service ]; then
+          #fi
+          #check if the sparks.service file is there
           #if not suggest a fresh install
         fi
         if [[ ("$FRESHUPGRADE" == "f" || "$FRESHUPGRADE" == "F") ]]; then
@@ -853,11 +855,11 @@ fi
 
 
 get_mn_count
-sync_node_start
 sentinel_check
 information
 sync_node_blocks
 sync_node_mnsync
+sync_node_start
 clear
 printf '%b\n' "$(cat $HOMEPATH/$COIN_NAME.info)"
 rebootVPS
