@@ -230,9 +230,6 @@ EOF
 sudo chown -R $USER:$USER ~/
 sudo cp $CONFIGFOLDER/$COIN_NAME.service /lib/systemd/system/$COIN_NAME.service
 #>/dev/null 2>&1
-
-
-
   sudo systemctl daemon-reload >/dev/null 2>&1
   sleep 3
   sudo systemctl start $COIN_NAME.service >/dev/null 2>&1
@@ -786,16 +783,25 @@ function upgrade_node() {
   echo -e "${GREEN} Step 2 / 3 ${RED}apt-get upgrade ${GREEN}done ${NC}"
   sudo DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq dist-upgrade >/dev/null 2>&1
   echo -e "${GREEN} Step 3 / 3 ${RED}apt dist-upgrade ${GREEN}done ${NC}"
+  echo -e " "
+  echo -e "${GREEN}Ubuntu Upgrade Complete! ${NC}"
+  echo -e " "
+  echo -e "${GREEN}Start clean up ${NC}"
+  sudo systemctl stop $COIN_NAME.service > /dev/null 2>&1
+  sudo killall $COIN_DAEMON > /dev/null 2>&1
+  #remove some old files
+  sudo rm $CONFIGFOLDER/bootstrap.dat.old > /dev/null 2>&1
+  #remove old deamon and cli
+  cd /usr/local/bin && sudo rm $COIN_CLI $COIN_DAEMON > /dev/null 2>&1 && cd
+  cd /usr/bin && sudo rm $COIN_CLI $COIN_DAEMON > /dev/null 2>&1 && cd
+  # remove old extracted files if they were not cleaned up before
+  sudo rm -rf $COIN_EPATH >/dev/null 2>&1
+  #rename the info file for info
+  sudo mv $HOMEPATH/$COIN_NAME.info $HOMEPATH/$COIN_NAME.info.old >/dev/null 2>&1
 
-#upgrade will run purgeOldInstallation
-#prepair system (upgrade linux )
-#download and install new daemon
+  download_node
 
-#all checks will be run
-
-#function useless atm but created for future requirments?
-echo -e "${GREEN}$COIN_CLI $COIN_DAEMON Upgrade Complete! ${NC}"
-sudo systemctl start $COIN_NAME.service >/dev/null 2>&1
+  sudo systemctl start $COIN_NAME.service >/dev/null 2>&1
 }
 
 function pause(){
@@ -811,12 +817,8 @@ spk_versioncheck
 ##
 if [ $UPGRADESPARKS = "true" ] ; then
   clear
-  purgeOldInstallation
-  #prepare_system
-  download_node
   upgrade_node
-
-fi
+  fi
 
 #do if CLEANSPARKS
 if [ $CLEANSPARKS = "true" ] ; then
