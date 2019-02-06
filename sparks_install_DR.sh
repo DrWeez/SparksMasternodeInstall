@@ -18,6 +18,7 @@
 #ADDED Upgrade / Fresh instrall checks and options
 #added clean up COIN_EPATH
 #removed root user check
+#updated to new GIT
 
 
 #V1.0.0
@@ -49,13 +50,13 @@ COIN_PROTOCAL_VERSION='70208'
 ###
 COIN_CLI='sparks-cli'
 COIN_PATH='/usr/local/bin/'
-COIN_REPO='https://github.com/SparksReborn/sparkspay.git'
-COIN_TGZ='https://github.com/sparkspay/sparks/releases/download/v0.12.3.4-rc0/sparkscore-0.12.3.4-RC0-x86_64-linux-gnu.tar.gz'
+COIN_REPO='https://github.com/sparkspay/sparks.git'
+COIN_TGZ='https://github.com/sparkspay/sparks/releases/download/v0.12.3.4/sparkscore-0.12.3.4-x86_64-linux-gnu.tar.gz'
 #COIN_TGZ='https://github.com/SparksReborn/sparkspay/releases/download/v0.12.3.2/sparkscore-0.12.3.2-linux64.tar.gz'
 COIN_EPATH='sparkscore-0.12.3/bin'
-COIN_BOOTSTRAP='https://github.com/SparksReborn/sparkspay/releases/download/bootstrap/bootstrap.dat'
+COIN_BOOTSTRAP='https://github.com/sparkspay/sparks/releases/download/bootstrap/bootstrap.dat'
 COIN_ZIP=$(echo $COIN_TGZ | awk -F'/' '{print $NF}')
-SENTINEL_REPO='https://github.com/SparksReborn/sentinel.git'
+SENTINEL_REPO='https://github.com/sparkspay/sentinel.git'
 COIN_NAME='sparks'
 COIN_PORT=8890
 RPC_PORT=8818
@@ -133,11 +134,6 @@ purgeOldInstallation() {
     sudo rm -rf $COIN_EPATH >/dev/null 2>&1
     sudo mv $HOMEPATH/$COIN_NAME.info $HOMEPATH/$COIN_NAME.info.old >/dev/null 2>&1
 
-
-#if fresh installs
-    #remove the whole sparks folder?
-    #this should be for Fresh install only
-    #when upgrading the blockchain data should not be removed.?
     if [[ $CLEANSPARKS='true' ]] ; then
       #remove old ufw port allow
       sudo ufw delete allow 8890/tcp > /dev/null 2>&1
@@ -161,7 +157,6 @@ function install_sentinel() {
   echo  "* * * * * cd $CONFIGFOLDER/sentinel && ./venv/bin/python bin/sentinel.py >> $CONFIGFOLDER/sentinel.log 2>&1" > $CONFIGFOLDER/$COIN_NAME.cron
   crontab $CONFIGFOLDER/$COIN_NAME.cron
   rm $CONFIGFOLDER/$COIN_NAME.cron >/dev/null 2>&1
-  #add for non root user
 
 cat << EOF > $CONFIGFOLDER/sentinel/sentinel.conf
 # specify path to sparks.conf or leave blank
@@ -347,8 +342,11 @@ function secure_vps_ssh() {
 
     sudo systemctl restart sshd >/dev/null 2>&1
 
-    #echo -e "${RED}VPS is Secured with SSH-RSA KEY. TEST access BEFORE you reboot${$NC}"
-
+    echo -e "${RED}THE VPS is Secured with SSH-RSA KEY. TEST access BEFORE you disconect${$NC}"
+    echo -e "${RED}after you have tested conncting with key  ${$NC}"
+    echo -e "${RED}Press [Enter] key to continue... ${$NC}"
+#add undo option if test fails
+pause
   fi
 
 }
@@ -605,7 +603,8 @@ function spk_versioncheck() {
               COINKEY=$(cat $CONFIGFOLDER/$CONFIG_FILE | grep masternodeprivkey)
               COINKEY=${COINKEY#*=}
               #could read and reuse the masternodeprivkey before removing it
-              #could back up the wallet
+              #should verify the lenth of key if fails then create new key
+              #should/could back up the wallet
             else
               echo -e "${RED}you must be sure to continue with a fresh install "
               exit 1
@@ -686,10 +685,10 @@ Get $COIN_NAME masternode status  : $COIN_CLI masternode status
 Get status of $COIN_NAME daemon   : $COIN_CLI getinfo
 Get $COIN_NAME mnsync status      : $COIN_CLI mnsync status
 
-At the time of configuring this $COIN_NAME masternode there were $mncount active masternodes.
+At the time of configuring this $COIN_NAME masternode there were$mncount active masternodes.
 
 First payment will only take place after roughly $mnpay hours and only after the collateral
-payment has a minimum $mncount confirmations.
+payment has a minimum$mncount confirmations.
 
   Configuration file is : $CONFIGFOLDER/$CONFIG_FILE
   VPS_IP                : $NODEIP:$COIN_PORT
